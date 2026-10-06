@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PyLab — Práctica de print y print f</title>
+  
+  <!-- Fuente e Iconos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Estilos CSS -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Librería Pyodide (Python en navegador) -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+  <!-- Librería Exportación PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+  <!-- BARRA NAVEGACIÓN -->
+  <header>
+    <div class="brand">
+      <span class="brand-icon">🐍</span>
+      <div class="brand-title">
+        <h1>PyLab</h1>
+        <span>Entorno de Práctica de Python</span>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <button class="btn btn-outline" onclick="openTeacherMode()">
+        <i class="fa-solid fa-lock"></i> Modo Docente
+      </button>
+      <button class="btn btn-primary" onclick="openReportModal()">
+        <i class="fa-solid fa-file-invoice"></i> Ver Reporte
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main>
+    
+    <!-- PANTALLA 1: REGISTRO E INICIO -->
+    <section id="welcome-screen" class="welcome-card">
+      <h2>¡Bienvenido a PyLab!</h2>
+      <p>Completá tus datos para comenzar con los desafíos de <code>print()</code> y <code>f-strings</code>.</p>
+      
+      <div class="form-group">
+        <label for="student-name">Nombre y Apellido:</label>
+        <input type="text" id="student-name" placeholder="Ej: Ana Pérez">
+      </div>
+      <div class="form-group">
+        <label for="liceo">Liceo / Escuela:</label>
+        <input type="text" id="liceo" placeholder="Ej: Liceo N° 53">
+      </div>
+      <div class="form-group">
+        <label for="student-group">Grupo / Clase:</label>
+        <input type="text" id="student-group" placeholder="Ej: 9°1">
+      </div>
+      
+      <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 12px;" onclick="startGame()">
+        <i class="fa-solid fa-play"></i> Comenzar Práctica
+      </button>
+    </section>
+
+    <!-- PANTALLA 2: PANEL DE JUEGO (Oculto al inicio) -->
+    <section id="game-screen" style="display: none;">
+      
+      <!-- CABECERA Y PROGRESO -->
+      <div class="game-header">
+        <div class="progress-info">
+          <span id="level-indicator">Nivel 1 de 8 — Ejercicio 1</span>
+          <span id="progress-percent">Progreso: 0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="progress-fill" class="progress-bar-fill"></div>
+        </div>
+        <div class="badges-container">
+          <div id="badge-1" class="badge-chip"><i class="fa-solid fa-award"></i> Primer Print</div>
+          <div id="badge-2" class="badge-chip"><i class="fa-solid fa-hashtag"></i> Números</div>
+          <div id="badge-3" class="badge-chip"><i class="fa-solid fa-box"></i> Variables</div>
+          <div id="badge-4" class="badge-chip"><i class="fa-solid fa-bolt"></i> Print F</div>
+          <div id="badge-5" class="badge-chip"><i class="fa-solid fa-trophy"></i> Maestro Python</div>
+        </div>
+      </div>
+
+      <!-- ZONA DE TRABAJO -->
+      <div class="exercise-container">
+        
+        <!-- INSTRUCCIONES -->
+        <div class="instruction-card">
+          <h3 id="ex-title"><i class="fa-solid fa-code"></i> Título del Nivel</h3>
+          <div id="ex-concept" class="concept-box">Explicación del concepto...</div>
+          <div id="ex-task" class="task-box">Consigna del ejercicio...</div>
+
+          <div id="hint-display" class="hint-box">
+            💡 <strong>Pista:</strong> <span id="hint-text"></span>
+          </div>
+
+          <div id="feedback-display" class="feedback-box"></div>
+        </div>
+
+        <!-- EDITOR Y CONSOLA -->
+        <div class="editor-card">
+          <label style="font-size: 0.85rem; color: var(--text-muted);">Editor de Código Python:</label>
+          <textarea id="code-input" class="code-editor" spellcheck="false" placeholder="Escribí tu código aquí..."></textarea>
+          
+          <div class="editor-toolbar">
+            <button class="btn btn-green" onclick="checkCode()">
+              <i class="fa-solid fa-play"></i> Ejecutar y Validar
+            </button>
+            <button class="btn btn-warning" onclick="requestHint()">
+              <i class="fa-solid fa-lightbulb"></i> Pedir Pista
+            </button>
+            <button class="btn btn-outline" onclick="clearEditor()">
+              <i class="fa-solid fa-eraser"></i> Limpiar
+            </button>
+          </div>
+
+          <div class="terminal-header">Salida de la consola:</div>
+          <div id="terminal-output" class="terminal-box">La salida aparecerá aquí al ejecutar...</div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODAL: REPORTE DE APRENDIZAJE -->
+  <div id="report-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeReportModal()">&times;</button>
+      
+      <div id="printable-report">
+        <h2>📋 Reporte de Aprendizaje — PyLab</h2>
+        
+        <div class="report-grid">
+          <div class="report-card-item">
+            <strong>Estudiante:</strong> <span id="rep-student">-</span><br>
+            <strong>Liceo:</strong> <span id="rep-liceo">-</span><br>
+            <strong>Grupo:</strong> <span id="rep-group">-</span>
+          </div>
+          <div class="report-card-item">
+            <strong>Fecha:</strong> <span id="rep-date">-</span><br>
+            <strong>Estado:</strong> <span id="rep-status">-</span>
+          </div>
+        </div>
+
+        <div class="grade-box-large">
+          <div>Nota Sugerida para Libreta (Escala 1 - 10)</div>
+          <div id="rep-grade" class="grade-number">-- / 10</div>
+          <div id="rep-percent" style="font-size: 0.85rem; color: #047857;">Avance: 0%</div>
+        </div>
+
+        <div class="report-grid">
+          <div class="report-card-item">
+            <strong>Nivel Alcanzado:</strong> <span id="rep-level">0/8</span><br>
+            <strong>Ejercicios Correctos:</strong> <span id="rep-correct">0</span>
+          </div>
+          <div class="report-card-item">
+            <strong>Intentos Totales:</strong> <span id="rep-attempts">0</span><br>
+            <strong>Pistas Solicitadas:</strong> <span id="rep-hints">0</span><br>
+            <strong>Tiempo Estimado:</strong> <span id="rep-time">0 min</span>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 16px; font-size: 1rem; color: #0f172a;">Habilidades Evaluadas:</h3>
+        <ul id="rep-skills-list" style="padding-left: 20px; font-size: 0.85rem; margin-top: 8px;"></ul>
+
+        <h3 style="margin-top: 16px; font-size: 1rem; color: #0f172a;">Desglose por Niveles:</h3>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Tema</th>
+              <th>Estado</th>
+              <th>Pistas</th>
+            </tr>
+          </thead>
+          <tbody id="rep-levels-body"></tbody>
+        </table>
+
+        <div id="rep-final-section" style="margin-top: 16px;">
+          <strong style="font-size: 0.85rem;">Último Código / Desafío Final:</strong>
+          <pre id="rep-final-code" style="background: #f1f5f9; padding: 10px; border-radius: 4px; font-size: 0.8rem; margin-top: 4px;"></pre>
+          <strong style="font-size: 0.85rem; margin-top: 8px; display: block;">Salida generada:</strong>
+          <pre id="rep-final-output" style="background: #1e293b; color: #10b981; padding: 10px; border-radius: 4px; font-size: 0.8rem; margin-top: 4px;"></pre>
+        </div>
+      </div>
+
+      <div class="no-print" style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="downloadPDF()"><i class="fa-solid fa-file-pdf"></i> Descargar PDF</button>
+        <button class="btn btn-green" onclick="copyResults()"><i class="fa-solid fa-copy"></i> Copiar Resumen</button>
+        <button class="btn btn-outline" onclick="closeReportModal()">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: AUTENTICACIÓN DOCENTE (CONTRASEÑA) -->
+  <div id="pin-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <button class="close-modal" onclick="closePinModal()">&times;</button>
+      <h3 style="color: var(--accent-blue); margin-bottom: 12px;">🔒 Acceso Docente</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+        Ingresá la contraseña para acceder a la planilla de calificaciones:
+      </p>
+      <div class="form-group">
+        <input type="password" id="teacher-pin-input" placeholder="Contraseña..." style="text-align: center; font-size: 1.1rem;">
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: center; margin-top: 16px;">
+        <button class="btn btn-primary" onclick="verifyTeacherPin()">Ingresar</button>
+        <button class="btn btn-outline" onclick="closePinModal()">Cancelar</button>
+      </div>
+      <p id="pin-error" style="color: var(--accent-red); font-size: 0.85rem; margin-top: 12px; display: none;">
+        ❌ Contraseña incorrecta
+      </p>
+    </div>
+  </div>
+
+  <!-- MODAL: PLANILLA MODO DOCENTE -->
+  <div id="teacher-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 900px;">
+      <button class="close-modal" onclick="closeTeacherMode()">&times;</button>
+      <h2 style="color: var(--accent-blue); margin-bottom: 16px;">📊 Planilla del Docente (Sesión Actual)</h2>
+      
+      <table class="report-table" style="background: white; color: black; border-radius: 6px; overflow: hidden;">
+        <thead>
+          <tr>
+            <th>Estudiante</th>
+            <th>Liceo</th>
+            <th>Grupo</th>
+            <th>Nota (1-10)</th>
+            <th>Avance</th>
+            <th>Nivel</th>
+            <th>Intentos</th>
+            <th>Pistas</th>
+            <th>Tiempo</th>
+          </tr>
+        </thead>
+        <tbody id="teacher-table-body"></tbody>
+      </table>
+
+      <div style="margin-top: 20px; text-align: right;">
+        <button class="btn btn-outline" onclick="closeTeacherMode()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lógica JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
